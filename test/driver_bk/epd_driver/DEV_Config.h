@@ -32,6 +32,7 @@
 
 #include <Arduino.h>
 #include <stdint.h>
+#include <stdio.h>
 
 /**
  * data
@@ -42,7 +43,7 @@
 
 /**
  * GPIO config
- **/
+**/
 #define EPD_SCK_PIN 12
 #define EPD_MOSI_PIN 11
 #define EPD_CS_PIN 10
@@ -54,14 +55,14 @@
 #define GPIO_PIN_RESET 0
 
 /**
- * GPIO read and write
- **/
+* GPIO read and write
+**/
 #define DEV_Digital_Write(_pin, _value) digitalWrite(_pin, _value == 0 ? LOW : HIGH)
 #define DEV_Digital_Read(_pin) digitalRead(_pin)
 
 /**
- * delay x ms
- **/
+* delay x ms
+**/
 #define DEV_Delay_ms(__xms) delay(__xms)
 
 /*------------------------------------------------------------------------------------------------------*/

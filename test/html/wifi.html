@@ -1,0 +1,78 @@
+<!-- FILEPATH: /home/silent/Documents/PlatformIO/Projects/waveshare-epd/src/html/wifi.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connect to WiFi</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      background-color: #fff;
+      border-radius: 5px;
+      padding: 20px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      max-width: 400px;
+      width: 100%;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+    }
+
+    .form-group button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h2>Connect to WiFi</h2>
+    <form>
+      <div class="form-group">
+        <label for="wifi-name">WiFi Name:</label>
+        <input type="text" id="wifi-name" name="wifi-name" placeholder="Enter WiFi Name">
+      </div>
+      <div class="form-group">
+        <label for="wifi-password">WiFi Password:</label>
+        <input type="password" id="wifi-password" name="wifi-password" placeholder="Enter WiFi Password">
+      </div>
+      <div class="form-group">
+        <button type="submit">Connect</button>
+      </div>
+    </form>
+  </div>
+</body>
+
+</html>
