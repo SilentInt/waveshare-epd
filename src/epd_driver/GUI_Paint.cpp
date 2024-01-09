@@ -577,6 +577,25 @@ void Paint_DrawCircle(UWORD X_Center, UWORD Y_Center, UWORD Radius, UWORD Color,
   }
 }
 
+int getUTF8CharLength(unsigned char firstByte) {
+  if ((firstByte & 0b10000000) == 0) {
+    return 1; // Single-byte character
+  } else if ((firstByte & 0b11100000) == 0b11000000) {
+    return 2; // Two-byte character
+  } else if ((firstByte & 0b11110000) == 0b11100000) {
+    return 3; // Three-byte character
+  } else if ((firstByte & 0b11111000) == 0b11110000) {
+    return 4; // Four-byte character
+  } else if ((firstByte & 0b11111100) == 0b11111000) {
+    return 5; // Five-byte character
+  } else if ((firstByte & 0b11111110) == 0b11111100) {
+    return 6; // Six-byte character
+  } else {
+    return -1; // Invalid UTF-8 sequence or multi-byte character starting with
+               // '10'
+  }
+}
+
 int find_char(const char *p_text, cFONT *font) {
   if (p_text == NULL || font == NULL) {
     Debugln("find_char: p_text or font is NULL");
@@ -647,17 +666,28 @@ void Paint_Draw_String(UWORD Xstart, UWORD Ystart, const char *str, cFONT *font,
   uint32_t line_height = font->Height;
 
   while (*p_text != 0) {
+    // 跳过换行符
+    if (*p_text == '\n') {
+      p_text++;
+      x = Xstart;
+      y += line_height;
+      if (y + line_height > Paint.Height) {
+        Debugln("Draw_line: Height Out of screen");
+        break;
+      }
+      continue;
+    }
     int curr_char = find_char(p_text, font);
     // printf("curr_char = %d\r\n", curr_char);
     if (curr_char == -1) {
-      // Debug("Draw_line: Can't find char:");
+      Debug("Draw_line: Can't find char:");
       // 打印不了的字符，跳过
       p_text++;
       continue;
     }
     // 根据是否是Ascii字符，选择宽度
     int width = curr_char < 0x80 ? font->ASCII_Width : font->Width;
-    // 宽度超出屏幕，换行
+    // 宽度超出屏幕
     if (x + width > Paint.Width) {
       x = Xstart;       // 重置x坐标
       y += line_height; // 下一行y坐标
@@ -672,14 +702,19 @@ void Paint_Draw_String(UWORD Xstart, UWORD Ystart, const char *str, cFONT *font,
                transparent);
     x += width; // 下一个字符的x坐标
     // 如果当前字符是ASCII字符
-    if (*p_text <= 0x7F) { // ASCII < 126
-      // Debugln(buf);
-      p_text++;
-    } else { // 如果当前字符是中文字符
-      p_text++;
-      p_text++;
+    // 跳过当前数量的字符
+    int chlen = getUTF8CharLength(*p_text);
+    for (int i = 0; i < chlen; i++) {
       p_text++;
     }
+    // if (*p_text <= 0x7F) { // ASCII < 126
+    //   // Debugln(buf);
+    //   p_text++;
+    // } else { // 如果当前字符是中文字符
+    //   p_text++;
+    //   p_text++;
+    //   p_text++;
+    // }
   }
 }
 

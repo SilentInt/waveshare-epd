@@ -1,6 +1,7 @@
 #include <ESPAsyncWebServer.h>
-#include <stdlib.h>
+#include <SPIFFS.h>
 
+#include "epd_views/views.h"
 #include "hal.h"
 
 using namespace std;
@@ -102,6 +103,8 @@ void text(AsyncWebServerRequest *request) {
     Serial.println(text);
   }
   request->send(200, "text/plain", "ok");
+  delay(20);
+  create_view_bw(txt_reader, 1);
 }
 
 // 接受前端发送的文件并保存

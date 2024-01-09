@@ -1,5 +1,8 @@
-#include "hal.h"
+#include <SPIFFS.h>
+#include <WiFi.h>
+// #include "hal.h"
 
+// using namespace fs;
 // AP并扫描附近的wifi
 void APMode() {
   WiFi.mode(WIFI_AP_STA);

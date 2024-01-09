@@ -3,10 +3,10 @@
 
 void setup() {
   hal_init();
-  screenClear();
-  create_view_bwr(time_view_bwr);
-  delay(2000);
-  screenClear();
+  // screenClear();
+  // delay(2000);
+  // create_view_bw(txt_reader, 0);
+  // delay(2000);
 }
 
 /* The main loop

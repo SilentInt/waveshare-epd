@@ -1,3 +1,5 @@
+#include <SPIFFS.h>
+
 #include "hal.h"
 
 void spiffs_init() {

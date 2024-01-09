@@ -33,7 +33,7 @@ void time_view_bwr(UBYTE *BlackImage, UBYTE *RedImage) {
 
   y_b = 5 + Font14CN.Height * 2 + 64;
   Paint_Draw_String(Paint.Width * 0.4 + 2, y_b, "每天一只猫猫，医生远离我!",
-                    &Font16CN, BLACK, WHITE, 1);
+                    &Font14CN, BLACK, WHITE, 1);
   // Paint_DrawImage(sunny.data, 0, 0, sunny.width, sunny.height);
   Paint_DrawIcon(sunny.data, Paint.Width * 0.2 - sunny.width * 0.5,
                  Paint.Height * 0.25 - sunny.height * 0.5, sunny.width,
