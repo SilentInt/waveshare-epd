@@ -1,7 +1,7 @@
+#include "txt_reader.h"
+
 #include <SdFat.h>
 
-#include "HAL/hal.h"
-#include "views.h"
 // 引入File
 extern SdFat sd;
 // using namespace std;
@@ -27,10 +27,12 @@ void txt_index(const char *path, cFONT *font) {
   char index_path[strlen(path) + 3];
   strcpy(index_path, path);
   strcat(index_path, ".i");
-  // 打开索引文件
-  // FILE *index = fopen(index_path, "w");
-  // File index = FILE.open(index_path, FILE_WRITE);
-  FsFile index = sd.open(index_path, O_WRITE);
+  // 打开索引文件,不存在则创建,存在则跳过创建
+  if (sd.exists(index_path)) {
+    printf("index file exists\n");
+    return;
+  }
+  FsFile index = sd.open(index_path, O_WRITE | O_CREAT);
   if (!index) {
     printf("open index file failed\n");
     return;
@@ -82,8 +84,8 @@ void txt_index(const char *path, cFONT *font) {
       }
       // 当前高度大于显示高度
       if (height > display_height - font->Height) {
-        printf("\npage:%d offset:%ld sum:%d\n", page, offset, sum);
-        printf("#######################\n");
+        // printf("\npage:%d offset:%ld sum:%d\n", page, offset, sum);
+        // printf("#######################\n");
         // 本页索引写入文件
         // fprintf(index, "%d|%ld|%d\n", page, offset, sum);
         String index_str =
@@ -184,16 +186,44 @@ void txt_view(const char *filename, uint32_t curr_page) {
   fp.close();
 }
 
+TXT_Info txt;
+/**
+ * txt阅读器
+ * @param image
+ */
 void txt_reader(UBYTE *image) {
   display_width = Paint.Width;
   display_height = Paint.Height;
   printf("display_width:%d display_height:%d\n", display_width, display_height);
   Serial.println("txt_reader");
   // 测试索引
-  const char path[] = "/text.txt";
+  // const char path[] = "/text.txt";
   // printf("Create index file\n");
-  txt_index(path, &Font16CN);
+  txt_index(txt.filename.c_str(), &Font16CN);
   // 展示内容
   // printf("Show txt content\n");
-  txt_view(path, 1);
+  txt_view(txt.filename.c_str(), txt.page);
 }
+
+/**
+ * 向下翻页
+ */
+void txt_reader_down() {
+  txt.page++;
+  create_view_bw(txt_reader, 1);
+}
+
+/**
+ * 向上翻页
+ */
+void txt_reader_up() {
+  if (txt.page > 1) {
+    txt.page--;
+    create_view_bw(txt_reader, 1);
+  }
+}
+
+/**
+ * 刷新视图
+ */
+void txt_reader_refresh() { create_view_bw(txt_reader, 0); }

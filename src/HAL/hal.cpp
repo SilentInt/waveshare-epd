@@ -16,6 +16,9 @@ void hal_init() {
 #if SD_USE
   sd_init();
 #endif
+#if BUTTON_USE
+  button_init();
+#endif
   // 初始化EPD_GPIO
   DEV_Module_Init();
 }

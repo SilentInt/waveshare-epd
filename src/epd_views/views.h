@@ -43,8 +43,7 @@
 #ifdef EPD_BW
 typedef void (*view_func_bw)(UBYTE *Image);  // 黑白屏的视图函数
 void create_view_bw(view_func_bw func, UBYTE mode);  // 创建一个黑白的视图
-void time_view_bw(UBYTE *Image);             // 展示时间页面
-void txt_reader(UBYTE *image);               // 读取txt文件
+void time_view_bw(UBYTE *Image);                     // 展示时间页面
 #endif
 
 #ifdef EPD_BWR

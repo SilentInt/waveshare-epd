@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fetch JSON Example</title>
+</head>
+<body>
+
+    <h1>Fetch JSON Example</h1>
+
+    <button onclick="sendJsonRequest()">Send JSON Request</button>
+
+    <script>
+        function sendJsonRequest() {
+            // 构建要发送的数据对象
+            var requestData = {
+                key1: 'value1',
+                key2: 'value2'
+            };
+
+            // 使用fetch发送JSON请求
+            fetch('http://192.168.4.1', {
+                method: 'POST', // 或者 'GET'，'PUT'等
+                headers: {
+                    'Content-Type': 'application/json'
+                    // 如果需要认证等其他头部信息，也可以在这里添加
+                },
+                body: JSON.stringify(requestData) // 将数据转换为JSON字符串
+            })
+            .then(response => response.json()) // 解析响应的JSON数据
+            .then(data => {
+                // 处理从后端返回的数据
+                console.log('Response from server:', data);
+            })
+            .catch(error => {
+                // 处理错误
+                console.error('Error:', error);
+            });
+        }
+    </script>
+
+</body>
+</html>

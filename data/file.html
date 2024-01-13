@@ -1,216 +1,242 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>文件列表</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background-color: #f4f4f4;
+      }
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>文件列表</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background-color: #f4f4f4;
-    }
+      h1 {
+        text-align: center;
+      }
 
-    h1 {
-      text-align: center;
-    }
+      #fileList {
+        list-style: none;
+        padding: 0;
+      }
 
-    #fileList {
-      list-style: none;
-      padding: 0;
-    }
+      li {
+        background-color: #fff;
+        margin: 5px 0;
+        padding: 10px;
+        border-radius: 5px;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
 
-    li {
-      background-color: #fff;
-      margin: 5px 0;
-      padding: 10px;
-      border-radius: 5px;
-      box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+      li:hover {
+        background-color: #f0f0f0;
+      }
 
-    li:hover {
-      background-color: #f0f0f0;
-    }
+      #modal {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        z-index: 999;
+        text-align: center;
+      }
 
-    #modal {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: white;
-      padding: 20px;
-      border-radius: 5px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      z-index: 999;
-      text-align: center;
-    }
+      #overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 998;
+      }
 
-    #overlay {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 998;
-    }
+      #modal button {
+        padding: 10px;
+        margin-top: 10px;
+        cursor: pointer;
+        background-color: #4caf50;
+        color: #fff;
+        border: none;
+        border-radius: 3px;
+      }
 
-    #modal button {
-      padding: 10px;
-      margin-top: 10px;
-      cursor: pointer;
-      background-color: #4caf50;
-      color: #fff;
-      border: none;
-      border-radius: 3px;
-    }
+      #modal button.cancel {
+        background-color: #f44336;
+        margin-left: 10px;
+      }
 
-    #modal button.cancel {
-      background-color: #f44336;
-      margin-left: 10px;
-    }
+      #fileUpload {
+        margin: 20px 0;
+      }
 
-    #fileUpload {
-      margin: 20px 0;
-    }
+      #fileUpload input {
+        display: none;
+      }
 
-    #fileUpload input {
-      display: none;
-    }
+      #fileUpload label {
+        padding: 10px;
+        background-color: #4caf50;
+        color: #fff;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+      }
 
-    #fileUpload label {
-      padding: 10px;
-      background-color: #4caf50;
-      color: #fff;
-      border: none;
-      border-radius: 3px;
-      cursor: pointer;
-    }
+      #fileUpload label:hover {
+        background-color: #45a049;
+      }
+    </style>
+  </head>
 
-    #fileUpload label:hover {
-      background-color: #45a049;
-    }
-  </style>
-</head>
+  <body>
+    <h1>文件列表</h1>
 
-<body>
+    <div id="fileUpload">
+      <input type="file" id="uploadInput" onchange="handleFileUpload()" />
+      <label for="uploadInput">选择文件</label>
+    </div>
 
-  <h1>文件列表</h1>
+    <ul id="fileList"></ul>
 
-  <div id="fileUpload">
-    <input type="file" id="uploadInput" onchange="handleFileUpload()">
-    <label for="uploadInput">选择文件</label>
-  </div>
+    <div id="modal">
+      <p id="selectedFile"></p>
+      <button onclick="confirmSelection()">确认</button>
+      <button class="cancel" onclick="closeModal()">取消</button>
+    </div>
 
-  <ul id="fileList"></ul>
+    <div id="overlay" onclick="closeModal()"></div>
 
-  <div id="modal">
-    <p id="selectedFile"></p>
-    <button onclick="confirmSelection()">确认</button>
-    <button class="cancel" onclick="closeModal()">取消</button>
-  </div>
-
-  <div id="overlay" onclick="closeModal()"></div>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      refreshFileList();
-    });
-
-    // 刷新文件列表的函数
-    function refreshFileList() {
-      // 清空文件列表
-      document.getElementById('fileList').innerHTML = '';
-
-      // 请求后端获取文件列表
-      fetch('/file/list')
-        .then(response => response.json())
-        .then(data => {
-          // 渲染文件列表
-          renderFileList(data);
-        })
-        .catch(error => console.error('Error fetching file list:', error));
-    }
-
-    function renderFileList(fileList) {
-      const listContainer = document.getElementById('fileList');
-
-      fileList.forEach((fileName, index) => {
-        const listItem = document.createElement('li');
-        listItem.innerHTML = `<span>${fileName}</span>`;
-        listItem.onclick = () => openModal(fileName);
-        listContainer.appendChild(listItem);
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        refreshFileList("/");
+        // renderFileList([
+        //   { name: "test.txt", isDir: false, size: 10 },
+        //   { name: "test2.txt", isDir: false, size: 20 },
+        //   { name: "ddd", isDir: true, size: 0 },
+        // ]);
       });
-    }
 
-    function openModal(fileName) {
-      const modal = document.getElementById('modal');
-      const overlay = document.getElementById('overlay');
-      const selectedFile = document.getElementById('selectedFile');
+      function renderFileList(fileList) {
+        const listContainer = document.getElementById("fileList");
+        listContainer.innerHTML = "";
 
-      selectedFile.textContent = `选中的文件：${fileName}`;
-      modal.style.display = 'block';
-      overlay.style.display = 'block';
-    }
+        fileList.forEach((fileitem, index) => {
+          const listItem = document.createElement("li");
+          // 关闭格式化
+          const icon = fileitem.isDir ? "D" : "-";
+          listItem.innerHTML = `
+            <span>${fileitem.name}</span>
+            <span>${fileitem.isDir ? "D" : "-"}</span>
+            <span>${fileitem.size}</span>`;
+          listItem.addEventListener("click", () => openModal(fileitem.name));
+          listContainer.appendChild(listItem);
+        });
+      }
 
-    function closeModal() {
-      const modal = document.getElementById('modal');
-      const overlay = document.getElementById('overlay');
+      function openModal(fileName) {
+        const modal = document.getElementById("modal");
+        const overlay = document.getElementById("overlay");
+        const selectedFile = document.getElementById("selectedFile");
 
-      modal.style.display = 'none';
-      overlay.style.display = 'none';
-    }
+        selectedFile.textContent = `选中的文件：${fileName}`;
+        selectedFile.fileName = fileName;
+        modal.style.display = "block";
+        overlay.style.display = "block";
+      }
 
-    function confirmSelection() {
-      // 获取选中的文件名称
-      const selectedFile = document.getElementById('selectedFile').textContent.replace('选中的文件：', '');
+      function closeModal() {
+        const modal = document.getElementById("modal");
+        const overlay = document.getElementById("overlay");
 
-      // 向后端发送文件名
-      fetch('/file/select', {  // 请将'/backend-endpoint'替换为实际的后端接口地址
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: "fileName=" + encodeURIComponent(selectedFile)
-      })
-        // .then(response => response.json())
-        .then(data => {
-          console.log('Server response:', data);
-          closeModal();
+        modal.style.display = "none";
+        overlay.style.display = "none";
+      }
+
+      // 刷新文件列表
+      function refreshFileList(path) {
+        // 向后端发送文件名
+        const data = { filename: path };
+        fetch("/file", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
         })
-        .catch(error => console.error('Error sending file name:', error));
-    }
+          .then((response) => response.json())
+          .then((data) => {
+            console.log("Server response:", data);
+            closeModal();
+            // 判断是否是文件夹
+            if (data.isDir) {
+              // 如果是文件夹，则刷新文件列表
+              renderFileList(data.data);
+            } else {
+              // 如果是文件，则打印content
+              console.log("File name:", data.data.name);
+              console.log("File content:", data.data.content);
 
-    function handleFileUpload() {
-      const uploadInput = document.getElementById('uploadInput');
-      const selectedFile = uploadInput.files[0];
+              const listContainer = document.getElementById("fileList");
+              listContainer.innerHTML = "";
+              // 添加返回上一级的按钮
+              const listItem = document.createElement("li");
+              listItem.innerHTML = ` <span>返回上一级</span>`;
+              // 从路径提取上一级路径
+              let parentPath = path.split("/").slice(0, -1).join("/");
+              parentPath = parentPath === "" ? "/" : parentPath;
+              console.log("parentPath:", parentPath);
+              listItem.addEventListener("click", () =>
+                refreshFileList(parentPath)
+              );
+              listContainer.appendChild(listItem);
+              // 展示文件内容
+              const contentItem = document.createElement("li");
+              contentItem.innerHTML = data.data.content;
+              listContainer.appendChild(contentItem);
+            }
+          })
+          .catch((error) => console.error("Error sending file name:", error));
+      }
 
-      // 创建一个 FormData 对象，用于将文件上传到后端
-      const formData = new FormData();
-      formData.append('file', selectedFile);
+      function confirmSelection() {
+        // 获取选中的文件名称
+        const selectedFile = document.getElementById("selectedFile").fileName;
+        console.log("Selected file:", selectedFile);
+        refreshFileList(selectedFile);
+      }
 
-      // 使用 fetch 发送文件到后端
-      fetch('/file/upload', {
-        method: 'POST',
-        body: formData,
-      })
-        .then(response => response.json())
-        .then(data => {
-          console.log('Server response:', data);
-          // 刷新文件列表
-          refreshFileList();
+      function handleFileUpload() {
+        const uploadInput = document.getElementById("uploadInput");
+        const selectedFile = uploadInput.files[0];
+
+        // 创建一个 FormData 对象，用于将文件上传到后端
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+
+        // 使用 fetch 发送文件到后端
+        fetch("/file/upload", {
+          method: "POST",
+          body: formData,
         })
-        .catch(error => console.error('Error uploading file:', error));
-    }
-  </script>
-
-</body>
-
+          .then((response) => response.json())
+          .then((data) => {
+            console.log("Server response:", data);
+            // 刷新文件列表
+            refreshFileList("/");
+          })
+          .catch((error) => console.error("Error uploading file:", error));
+      }
+    </script>
+  </body>
 </html>

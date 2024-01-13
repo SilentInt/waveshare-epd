@@ -9,6 +9,7 @@ void APMode() {
   WiFi.softAP("ESP32-AP");
   Serial.println("AP IP address: ");
   Serial.println(WiFi.softAPIP());
+  WiFi.scanNetworks(true);
 }
 
 // 连接WIFI ssid passwd
@@ -18,8 +19,11 @@ void connectWifi() {
   if (SPIFFS.exists("/wifi.conf")) {
     File file = SPIFFS.open("/wifi.conf", FILE_READ);
     if (file) {
-      ssid = file.readStringUntil('\n').substring(0, ssid.length() - 1);
-      passwd = file.readStringUntil('\n').substring(0, passwd.length() - 1);
+      ssid = file.readStringUntil('\n');
+      passwd = file.readStringUntil('\n');
+      // 去除末尾的换行符
+      ssid.trim();
+      passwd.trim();
       file.close();
       Serial.println("Connecting to [" + ssid + "]");
       Serial.println("passwd: [" + passwd + "]");
@@ -45,6 +49,7 @@ void connectWifi() {
       } else {
         // 连接失败，开启AP模式
         Serial.println("Connect wifi failed. Password error?");
+        WiFi.disconnect();
         APMode();
       }
     }

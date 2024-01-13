@@ -1,6 +1,7 @@
 #define FS_NO_GLOBALS
 #include "views.h"
-
+extern bool is_sleep;
+int partial_refresh = 0;  // 局部刷新次数
 // 黑白屏
 #ifdef EPD_BW
 /*
@@ -33,13 +34,16 @@ void create_view_bw(view_func_bw func, UBYTE mode) {
   renderScreen_bw(BlackImage);
 #else
   // 初始化
+  // if (is_sleep == true) EPD_Init();
   EPD_Init();
   // EPD_Clear();
   // 展示后休眠
-  if (mode == 0)
+  if (mode == 0 || partial_refresh >= 10) {
     EPD_Display(BlackImage);
-  else
+  } else {
+    partial_refresh = 1;
     EPD_DisplayPart(BlackImage);
+  }
   screenHibernate();
 #endif
   free(BlackImage);

@@ -1,10 +1,14 @@
+#include <ArduinoJson.h>
 #include <ESPAsyncWebServer.h>
 #include <SPIFFS.h>
+#include <SdFat.h>
 
 #include "epd_views/views.h"
 #include "hal.h"
 
 using namespace std;
+
+extern SdFat sd;
 // 创建Server对象
 AsyncWebServer server(80);
 
@@ -22,9 +26,9 @@ void handleRoot(AsyncWebServerRequest *request) {
 
 // 扫描wifi
 void scanwifi(AsyncWebServerRequest *request) {
-  int n = WiFi.scanNetworks();
-  Serial.println("scan done");
+  int n = WiFi.scanComplete();
   vector<String> ssid_list;
+  // 获取ssid数量
   if (n == 0) {
     Serial.println("no networks found");
   } else {
@@ -49,28 +53,8 @@ void scanwifi(AsyncWebServerRequest *request) {
   request->send(200, "text/plain", ssids);
 }
 
-// 打印文件树
-void print_tree(File root, int level) {
-  while (true) {
-    File file = root.openNextFile();
-    if (!file) {
-      break;
-    }
-    for (int i = 0; i < level; i++) {
-      Serial.print("  ");
-    }
-    Serial.println(file.name());
-    if (file.isDirectory()) {
-      print_tree(file, level + 1);
-    }
-    file.close();
-  }
-}
-
 // 保存wifi配置
 void wifi_commit(AsyncWebServerRequest *request) {
-  // String ssid = server.arg("ssid");
-  // String passwd = server.arg("passwd");
   String ssid = request->arg("ssid");
   String passwd = request->arg("passwd");
   Serial.println("ssid: " + ssid);
@@ -110,19 +94,16 @@ void text(AsyncWebServerRequest *request) {
 // 接受前端发送的文件并保存
 void file_upload(AsyncWebServerRequest *request, const String &filename,
                  size_t index, uint8_t *data, size_t len, bool final) {
-  // 提交路径过滤
-  // if (request->url() != "/file/upload") {
-  //   request->send(404, "text/plain", "Not found");
-  //   return;
-  // }
-  File file;
+  FsFile file;
+  const char *file_name = filename.c_str();
   // 创建/打开文件
   if (!index) {
-    Serial.printf("UploadStart: %s\n", filename.c_str());
-    // 保存到SPIFFS
-    file = SPIFFS.open("/" + filename, FILE_WRITE);
+    Serial.printf("UploadStart: %s\n", filename);
+    // 在sd卡中保存,如果不存在则创建
+    file.exists(file_name) ? file.open(file_name, O_RDWR)
+                           : file.open(file_name, O_CREAT | O_RDWR);
   } else {
-    file = SPIFFS.open("/" + filename, FILE_APPEND);
+    file.open(file_name, O_RDWR | O_APPEND);
   }
   if (!file) {
     Serial.println("open file failed");
@@ -134,44 +115,94 @@ void file_upload(AsyncWebServerRequest *request, const String &filename,
   }
   // 关闭文件
   if (final) {
-    Serial.printf("UploadEnd: %s, %u B\n", filename.c_str(), index + len);
+    Serial.printf("UploadEnd: %s, %u B\n", file_name, index + len);
     file.close();
   }
 }
 
-void file_list(AsyncWebServerRequest *request) {
-  // 读取SPIFFS中的文件列表
-  File root = SPIFFS.open("/");
-  String json = "[";
-  while (true) {
-    File file = root.openNextFile();
-    if (!file) {
-      break;
-    }
-    json += "\"" + String(file.name()) + "\",";
-    file.close();
+JsonDocument get_file_ls(String path) {
+  // 打开根目录
+  FsFile root;
+  FsFile file;
+  root.open(path.c_str(), O_RDONLY);
+  if (!root) {
+    Serial.println("open root failed");
   }
-  json = json.substring(0, json.length() - 1);
-  json += "]";
-  Serial.println(json);
-  request->send(200, "application/json", json);
+  root.ls(LS_R | LS_DATE | LS_SIZE);
+  // 创建json
+  JsonDocument doc;
+  JsonArray array = doc.to<JsonArray>();
+  root.rewind();
+  while (file.openNext(&root, O_RDONLY)) {
+    if (file.isHidden()) {
+      continue;
+    }
+    JsonDocument obj;
+    char name[256];
+    file.getName(name, sizeof(name));
+    obj["name"] = String(name);
+    obj["size"] = file.size();
+    obj["isDir"] = file.isDir();
+    doc.add(obj);
+  }
+  return doc;
+}
+
+// 返回json格式的文件列表
+void file_ls(AsyncWebServerRequest *request) {
+  Serial.println("file_ls");
+  JsonDocument json = get_file_ls("/");
+  String json_str;
+  serializeJson(json, json_str);
+  // 返回json
+  request->send(200, "application/json", json_str);
 }
 
 void file_select(AsyncWebServerRequest *request) {
   Serial.println("file_select");
+  // 获取post请求体
+  String body = request->arg("plain");
+  Serial.println(body);
   // 打印选中的文件
-  if (request->hasParam("fileName", true)) {
-    String fileName = request->arg("fileName");
-    Serial.println("file: " + fileName);
-    // 打印文件内容
-    File file = SPIFFS.open("/" + fileName, FILE_READ);
-    if (!file) {
-      Serial.println("open file failed");
-    }
-    // 打印全部内容
-    Serial.println(file.readString());
+  JsonDocument reqjson;
+  deserializeJson(reqjson, body);
+  String name = reqjson["name"].as<String>();
+  Serial.println("select file: " + name);
+  FsFile file;
+  file.open(name.c_str(), O_RDONLY);
+  if (!file) {
+    Serial.println("open file failed");
   }
-  request->send(200, "text/plain", "ok");
+
+  // 组装返回的json
+  JsonDocument resbody;
+  bool is_dir = file.isDir();
+  resbody["isDir"] = is_dir;
+
+  // 如果是文件夹则返回文件夹下的文件列表
+  if (is_dir) {
+    JsonDocument data = get_file_ls(name);
+    resbody["data"] = data;
+  } else {
+    // 如果是文件则 返回文件内容
+    Serial.println("open file: " + name);
+    // 读取文件内容
+    String content = "";
+    while (file.available()) {
+      content += (char)file.read();
+    }
+    Serial.println(content);
+    // 序列化json
+    JsonDocument json;
+    json["name"] = name;
+    json["content"] = content;
+
+    resbody["data"] = json;
+  }
+  String json_str;
+  serializeJson(resbody, json_str);
+  // 返回文件内容
+  request->send(200, "text/plain", json_str);
 }
 
 void createServer() {
@@ -187,8 +218,9 @@ void createServer() {
   // 文件列表
   server.serveStatic("/file", SPIFFS, "/file.html");
   // 返回json格式的文件列表
-  server.on("/file/list", HTTP_GET, file_list);       // 文件列表
-  server.on("/file/select", HTTP_POST, file_select);  // 选中文件
+  server.on("/file/list", HTTP_GET, file_ls);  // 文件列表
+  // 返回json格式的文件列表
+  server.on("/file/select", HTTP_POST, file_select);  // 文件列表
   // 在线传书
   server.onFileUpload(file_upload);  // 接受前端的post请求体并保存
 
